@@ -7,7 +7,7 @@ function getUsernameCandidates(fullName: string): string[] {
 
   const add = (s: string) => {
     const clean = s.replace(/[^a-z0-9._-]/g, "");
-    if (clean.length >= 2 && clean.length <= 39) seen.add(clean);
+    if (clean.length >= 4 && clean.length <= 39) seen.add(clean);
   };
 
   if (parts.length >= 2) {
