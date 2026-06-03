@@ -11,7 +11,7 @@ export function parseArgs(argv: string[]): Query | string {
     return `Unknown target "${target}". Use "person" or "company".`;
   }
 
-  const flags: Record<string, string> = {};
+  const flags: Record<string, string | boolean> = {};
   for (let i = 1; i < args.length; i++) {
     const arg = args[i]!;
     if (arg.startsWith("--")) {
@@ -20,23 +20,27 @@ export function parseArgs(argv: string[]): Query | string {
       if (next && !next.startsWith("--")) {
         flags[key] = next;
         i++;
+      } else {
+        flags[key] = true;
       }
     }
   }
 
+  const deep = flags.deep === true;
+
   if (target === "person") {
-    const { username, email, name } = flags;
+    const { username, email, name } = flags as Record<string, string>;
     if (!username && !email && !name) {
       return "Provide at least one of --username, --email, or --name.";
     }
-    return { target: "person", username, email, name };
+    return { target: "person", username, email, name, deep };
   }
 
-  const { domain, name } = flags;
+  const { domain, name } = flags as Record<string, string>;
   if (!domain && !name) {
     return "Provide at least one of --domain or --name.";
   }
-  return { target: "company", domain, name };
+  return { target: "company", domain, name, deep };
 }
 
 function help(): string {
@@ -52,5 +56,8 @@ Person flags:
 
 Company flags:
   --domain <domain>   Look up domain registration and infrastructure
-  --name <name>       Search company registrations and web presence`;
+  --name <name>       Search company registrations and web presence
+
+Shared flags:
+  --deep              Use headless browser + LLM to fetch and parse pages (requires OPENROUTER_API_KEY)`;
 }

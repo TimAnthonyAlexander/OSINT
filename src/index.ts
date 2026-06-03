@@ -7,6 +7,7 @@ import { emailSource } from "./sources/email.js";
 import { nameSource } from "./sources/name.js";
 import { domainSource } from "./sources/domain.js";
 import { companyNameSource } from "./sources/company-name.js";
+import { deepSearchSource } from "./sources/deep-search.js";
 
 register(usernameSource);
 register(emailSource);
@@ -35,6 +36,15 @@ async function main() {
   }
 
   const allResults = (await Promise.all(sources.map((s) => s.run(query)))).flat();
+
+  // Deep search runs for any target when --deep is passed
+  if (query.deep) {
+    const deepResults = await deepSearchSource.run(query);
+    if (deepResults.length > 0) {
+      console.log();
+    }
+    allResults.push(...deepResults);
+  }
 
   printResults(allResults);
 }

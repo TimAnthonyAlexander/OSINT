@@ -5,12 +5,14 @@ export type PersonQuery = {
   username?: string;
   email?: string;
   name?: string;
+  deep?: boolean;
 };
 
 export type CompanyQuery = {
   target: "company";
   domain?: string;
   name?: string;
+  deep?: boolean;
 };
 
 export type Query = PersonQuery | CompanyQuery;
