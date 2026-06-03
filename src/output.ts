@@ -22,7 +22,8 @@ export function printResults(results: SourceResult[]): void {
     if (found.length > 0) console.log();
     console.log(`Not found (${notFound.length}):`);
     for (const r of notFound) {
-      console.log(`  [ ] ${r.label}`);
+      const detail = r.detail ? ` — ${r.detail}` : "";
+      console.log(`  [ ] ${r.label}${detail}`);
     }
   }
 }
