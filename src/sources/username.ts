@@ -134,55 +134,56 @@ const platforms: Platform[] = [
   },
 ];
 
+export async function checkPlatforms(username: string, source: string): Promise<SourceResult[]> {
+  const results: SourceResult[] = [];
+
+  const batch = 5;
+  for (let i = 0; i < platforms.length; i += batch) {
+    const chunk = platforms.slice(i, i + batch);
+    const chunkResults = await Promise.all(
+      chunk.map(async (p): Promise<SourceResult> => {
+        const url = p.url(username);
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
+          const res = await fetch(url, {
+            signal: controller.signal,
+            headers: { "User-Agent": "osint-cli/0.1" },
+          });
+          clearTimeout(timeout);
+          const body = await res.text().catch(() => "");
+          return {
+            source,
+            label: p.label,
+            found: p.found(res, body),
+            url,
+          };
+        } catch {
+          return {
+            source,
+            label: p.label,
+            found: false,
+            url,
+            detail: "request failed",
+          };
+        }
+      }),
+    );
+    results.push(...chunkResults);
+    if (i + batch < platforms.length) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+
+  return results;
+}
+
 export const usernameSource: Source = {
   id: "username",
   label: "Username scan",
   category: "person",
   async run(query: Query): Promise<SourceResult[]> {
     if (query.target !== "person" || !query.username) return [];
-    const username = query.username;
-    const results: SourceResult[] = [];
-
-    // Fire requests with a small concurrency cap to avoid rate limiting
-    const batch = 5;
-    for (let i = 0; i < platforms.length; i += batch) {
-      const chunk = platforms.slice(i, i + batch);
-      const chunkResults = await Promise.all(
-        chunk.map(async (p): Promise<SourceResult> => {
-          const url = p.url(username);
-          try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 8000);
-            const res = await fetch(url, {
-              signal: controller.signal,
-              headers: { "User-Agent": "osint-cli/0.1" },
-            });
-            clearTimeout(timeout);
-            const body = await res.text().catch(() => "");
-            return {
-              source: "username",
-              label: p.label,
-              found: p.found(res, body),
-              url,
-            };
-          } catch {
-            return {
-              source: "username",
-              label: p.label,
-              found: false,
-              url,
-              detail: "request failed",
-            };
-          }
-        }),
-      );
-      results.push(...chunkResults);
-      // Small delay between batches
-      if (i + batch < platforms.length) {
-        await new Promise((r) => setTimeout(r, 500));
-      }
-    }
-
-    return results;
+    return checkPlatforms(query.username, "username");
   },
 };
